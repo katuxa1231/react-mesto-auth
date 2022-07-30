@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Redirect, Route, Switch, useHistory } from 'react-router-dom';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { Main } from './Main';
@@ -8,31 +9,65 @@ import { EditAvatarPopup } from './EditAvatarPopup';
 import { AddPlacePopup } from './AddPlacePopup';
 import { api } from '../utils/api';
 import { CurrentUserContext } from '../contexts/CurrentUserContext';
+import { ProtectedRoute } from './ProtectedRoute';
+import { Login } from './Login';
+import { Register } from './Register';
+import * as auth from '../utils/auth';
+import { AppRoute, TooltipType } from '../utils/constants';
+import { InfoTooltip } from './InfoTooltip';
 
 function App() {
+  const history = useHistory()
   const [cards, setCards] = useState([])
   const [isEditProfilePopupOpen, setEditProfilePopupVisibility] = useState(false)
   const [isAddPlacePopupOpen, setAddPlacePopupVisibility] = useState(false)
   const [isEditAvatarPopupOpen, setEditAvatarPopupVisibility] = useState(false)
+  const [tooltipParams, setTooltipParams] = useState({ isOpen: false, type: TooltipType.success, message: '' })
   const [isLoading, setLoadingStatus] = useState(false)
   const [selectedCard, setSelectedCard] = useState(null)
   const [currentUser, setCurrentUser] = useState({})
+  const [loggedIn, setLoggedIn] = useState(false)
+  const [path, setPath] = useState(history.location.pathname)
+
+  history.listen((location) => {
+    setPath(location.pathname)
+  })
 
   useEffect(() => {
-    api.getInitialCards()
-      .then((cards) => {
-        setCards(cards)
+    if (loggedIn) {
+      api.getInitialCards()
+        .then((cards) => {
+          setCards(cards)
 
-      })
-      .catch((err) => console.log(`Error: ${err}`))
-  }, [])
+        })
+        .catch((err) => console.log(`Error: ${err}`))
+    }
+  }, [loggedIn])
 
   useEffect(() => {
-    api.getUserInfo()
-      .then((userData) => {
-        setCurrentUser(userData)
-      })
-      .catch((err) => console.log(`Error: ${err}`))
+    if (loggedIn) {
+      api.getUserInfo()
+        .then((userData) => {
+          setCurrentUser({ ...userData, email: currentUser.email })
+        })
+        .catch((err) => console.log(`Error: ${err}`))
+    }
+
+  }, [loggedIn])
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      auth.getUser(token)
+        .then((res) => {
+          if (res) {
+            setCurrentUser({ email: res.data.email })
+            handleLogin()
+            history.push('/')
+          }
+        })
+        .catch((err) => console.log(`Error: ${err}`))
+    }
   }, [])
 
   function onEditProfile() {
@@ -52,6 +87,19 @@ function App() {
     setAddPlacePopupVisibility(false)
     setEditAvatarPopupVisibility(false)
     setSelectedCard(null)
+  }
+
+  function closeTooltip() {
+    setTooltipParams({...tooltipParams, isOpen: false})
+  }
+
+  function handleLogin() {
+    setLoggedIn(true);
+  }
+
+  function handleLogout() {
+    localStorage.setItem('token', '')
+    setLoggedIn(false)
   }
 
   function handleCardClick(card) {
@@ -109,12 +157,41 @@ function App() {
       .finally(() => setLoadingStatus(false))
   }
 
+  function openTooltip(type, message) {
+    setTooltipParams({isOpen: true, type: type, message: message})
+  }
+
   return (
     <CurrentUserContext.Provider value={currentUser}>
       <div className="page">
-        <Header/>
-        <Main onEditProfile={onEditProfile} onAddPlace={onAddPlace} onEditAvatar={onEditAvatar}
-              onCardClick={handleCardClick} cards={cards} onCardLike={handleCardLike} onCardDelete={handleCardDelete}/>
+        <Header loggedIn={loggedIn} handleLogout={handleLogout} path={path}/>
+        <Switch>
+          <ProtectedRoute
+            exact path={AppRoute.root}
+            component={Main}
+            onEditProfile={onEditProfile}
+            onAddPlace={onAddPlace}
+            onEditAvatar={onEditAvatar}
+            onCardClick={handleCardClick}
+            cards={cards}
+            onCardLike={handleCardLike}
+            onCardDelete={handleCardDelete}
+            loggedIn={loggedIn}>
+          </ProtectedRoute>
+          <Route path={AppRoute.login}>
+            <div className="container">
+              <Login handleLogin={handleLogin} openTooltip={openTooltip}/>
+            </div>
+          </Route>
+          <Route path={AppRoute.registration}>
+            <div className="container">
+              <Register openTooltip={openTooltip}/>
+            </div>
+          </Route>
+          <Route>
+            {loggedIn ? (<Redirect to={AppRoute.root}/>) : (<Redirect to={AppRoute.login}/>)}
+          </Route>
+        </Switch>
         <Footer/>
         <AddPlacePopup isOpen={isAddPlacePopupOpen} onClose={closeAllPopups} onAddCard={handleAddCard}
                        isLoading={isLoading}/>
@@ -123,6 +200,7 @@ function App() {
         <EditAvatarPopup isOpen={isEditAvatarPopupOpen} onClose={closeAllPopups} onUpdateAvatar={handleUpdateAvatar}
                          isLoading={isLoading}/>
         <ImagePopup card={selectedCard} handleCloseButtonClick={closeAllPopups}/>
+        <InfoTooltip params={tooltipParams} handleCloseButtonClick={closeTooltip} />
       </div>
     </CurrentUserContext.Provider>
   );

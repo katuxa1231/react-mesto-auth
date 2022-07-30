@@ -3,17 +3,13 @@
   background-color: #000000;
   color: #FFFFFF;
   box-sizing: border-box;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   min-width: 320px;
-  padding-top: 28px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
   -ms-text-size-adjust: 100%;
   -moz-text-size-adjust: 100%;
-}
-
-@media screen and (min-width: 1024px) {
-  .page {
-    padding-top: 45px;
-  }
 }
