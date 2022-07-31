@@ -13,7 +13,7 @@ import { ProtectedRoute } from './ProtectedRoute';
 import { Login } from './Login';
 import { Register } from './Register';
 import * as auth from '../utils/auth';
-import { AppRoute, TooltipType } from '../utils/constants';
+import { AppRoute, tooltipMessage, TooltipType } from '../utils/constants';
 import { InfoTooltip } from './InfoTooltip';
 
 function App() {
@@ -27,32 +27,16 @@ function App() {
   const [selectedCard, setSelectedCard] = useState(null)
   const [currentUser, setCurrentUser] = useState({})
   const [loggedIn, setLoggedIn] = useState(false)
-  const [path, setPath] = useState(history.location.pathname)
-
-  history.listen((location) => {
-    setPath(location.pathname)
-  })
 
   useEffect(() => {
     if (loggedIn) {
-      api.getInitialCards()
-        .then((cards) => {
+      Promise.all([api.getInitialCards(), api.getUserInfo()])
+        .then(([cards, userData]) => {
           setCards(cards)
-
-        })
-        .catch((err) => console.log(`Error: ${err}`))
-    }
-  }, [loggedIn])
-
-  useEffect(() => {
-    if (loggedIn) {
-      api.getUserInfo()
-        .then((userData) => {
           setCurrentUser({ ...userData, email: currentUser.email })
         })
         .catch((err) => console.log(`Error: ${err}`))
     }
-
   }, [loggedIn])
 
   useEffect(() => {
@@ -62,13 +46,41 @@ function App() {
         .then((res) => {
           if (res) {
             setCurrentUser({ email: res.data.email })
-            handleLogin()
+            setLoggedIn(true)
             history.push('/')
           }
         })
-        .catch((err) => console.log(`Error: ${err}`))
+        .catch((err) => console.log(`Error: ${err.status}`))
     }
   }, [])
+
+  function handleLogin(email, password) {
+    auth.logIn(email, password)
+      .then((data) => {
+        if (data) {
+          localStorage.setItem('token', data.token)
+        }
+        setLoggedIn(true)
+        history.push('/')
+      })
+      .catch((err) => {
+        err.json().then((e) => {
+          openTooltip(TooltipType.failure, e.error || e.message || tooltipMessage.registration[TooltipType.failure])
+        })
+      })
+  }
+
+  function handleRegister(email, password) {
+    auth.register(email, password)
+      .then(() => {
+        openTooltip(TooltipType.success, tooltipMessage.registration[TooltipType.success])
+      })
+      .catch((err) => {
+        err.json().then((e) => {
+          openTooltip(TooltipType.failure, e.error || e.message || tooltipMessage.registration[TooltipType.failure])
+        })
+      })
+  }
 
   function onEditProfile() {
     setEditProfilePopupVisibility(true)
@@ -91,10 +103,6 @@ function App() {
 
   function closeTooltip() {
     setTooltipParams({...tooltipParams, isOpen: false})
-  }
-
-  function handleLogin() {
-    setLoggedIn(true);
   }
 
   function handleLogout() {
@@ -129,7 +137,7 @@ function App() {
   }
 
   function handleCardLike(card) {
-    const isLiked = card.likes.some(item => item._id === currentUser._id);
+    const isLiked = card.likes.some(item => item._id === currentUser._id)
 
     api.toggleLike(card._id, isLiked)
       .then((newCard) => {
@@ -164,7 +172,7 @@ function App() {
   return (
     <CurrentUserContext.Provider value={currentUser}>
       <div className="page">
-        <Header loggedIn={loggedIn} handleLogout={handleLogout} path={path}/>
+        <Header loggedIn={loggedIn} handleLogout={handleLogout}/>
         <Switch>
           <ProtectedRoute
             exact path={AppRoute.root}
@@ -180,12 +188,12 @@ function App() {
           </ProtectedRoute>
           <Route path={AppRoute.login}>
             <div className="container">
-              <Login handleLogin={handleLogin} openTooltip={openTooltip}/>
+              <Login handleLogin={handleLogin}/>
             </div>
           </Route>
           <Route path={AppRoute.registration}>
             <div className="container">
-              <Register openTooltip={openTooltip}/>
+              <Register handleRegister={handleRegister}/>
             </div>
           </Route>
           <Route>
@@ -203,7 +211,7 @@ function App() {
         <InfoTooltip params={tooltipParams} handleCloseButtonClick={closeTooltip} />
       </div>
     </CurrentUserContext.Provider>
-  );
+  )
 }
 
 export default App;

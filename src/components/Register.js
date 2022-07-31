@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import * as auth from '../utils/auth';
-import { tooltipMessage, TooltipType } from '../utils/constants';
 
-export function Register({openTooltip}) {
+export function Register({handleRegister}) {
   const [registerData, setRegisterData] = useState({ email: '', password: '' })
 
   function handleChange(event) {
@@ -14,15 +12,7 @@ export function Register({openTooltip}) {
   function handleSubmit(event) {
     event.preventDefault();
 
-    auth.register(registerData.email, registerData.password)
-      .then(() => {
-        openTooltip(TooltipType.success, tooltipMessage.registration[TooltipType.success])
-      })
-      .catch((err) => {
-        err.json().then((e) => {
-          openTooltip(TooltipType.failure, e.error || e.message || tooltipMessage.registration[TooltipType.failure])
-        })
-      })
+    handleRegister(registerData.email, registerData.password)
   }
 
   return (

@@ -1,10 +1,10 @@
 import headerLogo from '../images/header-logo.svg';
 import { useContext } from 'react';
 import { CurrentUserContext } from '../contexts/CurrentUserContext';
-import { Link } from 'react-router-dom';
+import { Link, Route, Switch } from 'react-router-dom';
 import { AppRoute } from '../utils/constants';
 
-export function Header({ loggedIn, handleLogout, path }) {
+export function Header({ loggedIn, handleLogout }) {
   const currentUser = useContext(CurrentUserContext)
 
   return (
@@ -15,13 +15,18 @@ export function Header({ loggedIn, handleLogout, path }) {
         src={headerLogo}
       />
       {loggedIn
-        ? <div className="header__actions">
+        ? (<div className="header__actions">
             <p className="header__login">{currentUser.email}</p>
             <button className='header__button' onClick={handleLogout}>Выйти</button>
-          </div>
-        : <Link className='header__link' to={path === AppRoute.login ? AppRoute.registration : AppRoute.login}>
-            {path === AppRoute.login ? 'Зарегистрироваться' : 'Войти'}
-          </Link>}
+          </div>)
+        : (<Switch>
+            <Route path={AppRoute.login}>
+              <Link to={AppRoute.registration}>Зарегистрироваться</Link>
+            </Route>
+            <Route path={AppRoute.registration}>
+              <Link to={AppRoute.login}>Войти</Link>
+            </Route>
+          </Switch>)}
     </header>
   )
 }

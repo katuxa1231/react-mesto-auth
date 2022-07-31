@@ -1,11 +1,7 @@
 import { useState } from 'react';
-import { useHistory } from 'react-router-dom';
-import * as auth from '../utils/auth';
-import { tooltipMessage, TooltipType } from '../utils/constants';
 
-export function Login({ handleLogin, openTooltip }) {
+export function Login({ handleLogin }) {
   const [authData, setAuthData] = useState({ email: '', password: '' })
-  const history = useHistory();
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -18,19 +14,7 @@ export function Login({ handleLogin, openTooltip }) {
       return;
     }
 
-    auth.logIn(authData.email, authData.password)
-      .then((data) => {
-        if (data) {
-          localStorage.setItem('token', data.token)
-        }
-        handleLogin()
-        history.push('/')
-      })
-      .catch((err) => {
-        err.json().then((e) => {
-          openTooltip(TooltipType.failure, e.error || e.message || tooltipMessage.registration[TooltipType.failure])
-        })
-      });
+    handleLogin(authData.email, authData.password)
   }
 
   return (

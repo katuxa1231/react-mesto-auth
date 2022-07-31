@@ -39,8 +39,9 @@ export function Main({ onEditProfile, onAddPlace, onEditAvatar, onCardClick, car
       </section>
       <section>
         <ul className="photo-cards">
-          {cards.map((card) =>
-            <Card card={card} key={card._id} onCardClick={onCardClick} onCardLike={onCardLike} onCardDelete={onCardDelete}/>)}
+          {cards.map((card) => (
+            <Card card={card} key={card._id} onCardClick={onCardClick} onCardLike={onCardLike} onCardDelete={onCardDelete}/>
+          ))}
         </ul>
       </section>
     </main>

@@ -9,7 +9,7 @@ export const register = (email, password) => {
     body: JSON.stringify({ email, password })
   })
     .then((res) => {
-      return res.ok ? res.json() : Promise.reject(res)
+      return checkResponse(res)
     })
 }
 
@@ -22,7 +22,7 @@ export const logIn = (email, password) => {
     body: JSON.stringify({ email, password })
   })
     .then((res) => {
-      return res.ok ? res.json() : Promise.reject(res)
+      return checkResponse(res)
     })
 }
 
@@ -31,11 +31,14 @@ export const getUser = (token) => {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      "Authorization" : `Bearer ${token}`
+      "Authorization": `Bearer ${token}`
     }
   })
     .then((res) => {
-      return res.ok ? res.json() : Promise.reject(res)
+      return checkResponse(res)
     })
-    .catch((err) => console.log(err));
+}
+
+function checkResponse(res) {
+  return res.ok ? res.json() : Promise.reject(res);
 }
