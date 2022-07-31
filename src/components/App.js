@@ -60,6 +60,7 @@ function App() {
         if (data) {
           localStorage.setItem('token', data.token)
         }
+        setCurrentUser({ email })
         setLoggedIn(true)
         history.push('/')
       })
